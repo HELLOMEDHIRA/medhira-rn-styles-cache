@@ -1,0 +1,16 @@
+version: 2
+
+build:
+  os: ubuntu-lts-2024
+  tools:
+    python: "3.11"
+  commands:
+    - pip install -r requirements.txt
+    - mkdocs build
+
+mkdocs:
+  configuration: mkdocs.yml
+
+python:
+  install:
+    - requirements.txt
