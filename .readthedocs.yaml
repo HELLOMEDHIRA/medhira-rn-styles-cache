@@ -1,7 +1,7 @@
 version: 2
 
 build:
-  os: ubuntu-lts-2024
+  os: "ubuntu-24.04"
   tools:
     python: "3.11"
   commands:
@@ -13,4 +13,4 @@ mkdocs:
 
 python:
   install:
-    - requirements.txt
+    - requirements: requirements.txt
