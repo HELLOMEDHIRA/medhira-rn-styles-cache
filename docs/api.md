@@ -144,14 +144,3 @@ Creates a SHA256 hash of style for cache key.
 function hashStyle(style: object, theme: string): string
 ```
 
----
-
-## Configuration
-
-### LRU Cache Settings
-
-The internal LRU cache is configured with:
-- **max size:** 500 entries
-- **ttl:** No expiration
-
-You can modify these settings in the source code if needed.
