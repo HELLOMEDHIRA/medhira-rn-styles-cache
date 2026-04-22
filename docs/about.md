@@ -74,9 +74,9 @@ We welcome contributions from the community! Whether you've found a bug, have a 
 
 If you need help or have questions:
 
-- Email: [hello@medhira.io](mailto:hello@medhira.io)
+- Email: [hello.medhira@gmail.com](mailto:hello.medhira@gmail.com)
 - GitHub Issues: [https://github.com/HELLOMEDHIRA/medhira-rn-styles-cache/issues](https://github.com/HELLOMEDHIRA/medhira-rn-styles-cache/issues)
-- LinkedIn: [@medhira](https://www.linkedin.com/company/medhira)
+- LinkedIn: [@medhira](https://www.linkedin.com/in/smuniharish)
 
 ## License
 

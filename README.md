@@ -196,7 +196,7 @@ Please feel free to drop us an email at [MEDHIRA](mailto:hello.medhira@gmail.com
 
 ## Sponsor & Support
 
-To keep this library maintained and up-to-date please consider [sponsoring it on GitHub](https://github.com/sponsors/medhira). Or if you are looking for a private support or help in customizing the experience, then reach out to us on LinkedIn [https://www.linkedin.com/in/smuniharish](https://www.linkedin.com/company/medhira).
+To keep this library maintained and up-to-date please consider [sponsoring it on GitHub](https://github.com/sponsors/smuniharish). Or if you are looking for a private support or help in customizing the experience, then reach out to us on LinkedIn [https://www.linkedin.com/in/smuniharish](https://www.linkedin.com/in/smuniharish).
 
 ## License
 
