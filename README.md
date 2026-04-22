@@ -204,4 +204,4 @@ To keep this library maintained and up-to-date please consider [sponsoring it on
 
 ---
 
-Made with love by [MEDHIRA](https://medhira.io)
+Made with love by [MEDHIRA](https://medhira.readthedocs.io/en/latest/)
