@@ -1,207 +1,143 @@
-# medhira-rn-styles-cache
+<p align="center">
+  <img src="https://raw.githubusercontent.com/HELLOMEDHIRA/medhira/main/assets/medhira-logo.png" alt="MEDHIRA" width="120" />
+</p>
 
-MEDHIRA - React Native styles caching with LRU cache
+<h1 align="center">medhira-rn-styles-cache</h1>
 
-![medhira](https://raw.githubusercontent.com/HELLOMEDHIRA/medhira/main/assets/medhira-logo.png)
+<p align="center">
+  <strong>LRU-backed caching for dynamic React Native styles</strong>
+</p>
 
-**Engineering Intelligence Across Everything**
+<p align="center">
+  <a href="https://www.npmjs.com/package/medhira-rn-styles-cache"><img src="https://img.shields.io/npm/v/medhira-rn-styles-cache.svg" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/medhira-rn-styles-cache"><img src="https://img.shields.io/npm/dm/medhira-rn-styles-cache.svg" alt="npm downloads" /></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" /></a>
+  <a href="https://medhira-rn-styles-cache.readthedocs.io"><img src="https://img.shields.io/badge/docs-readthedocs-teal" alt="Documentation" /></a>
+</p>
 
-[![npm package](https://img.shields.io/npm/v/medhira-rn-styles-cache.svg)](https://www.npmjs.com/package/medhira-rn-styles-cache)
-[![npm downloads](https://img.shields.io/npm/dm/medhira-rn-styles-cache.svg)](https://www.npmjs.com/package/medhira-rn-styles-cache)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<p align="center">
+  Engineering Intelligence Across Everything — by <a href="https://medhira.readthedocs.io/en/latest/">MEDHIRA</a>
+</p>
 
-## Installation
+---
+
+## Why this exists
+
+`StyleSheet.create()` optimizes style objects, but **dynamic styles** recreated every render waste work and memory. This package caches flattened styles in an **LRU cache** keyed by a stable hash, so identical style shapes reuse the same registered style reference.
+
+| You get | Details |
+|--------|---------|
+| LRU caching | Configurable max entries (default **500**) |
+| Stable keys | Canonical serialization — property order does not matter |
+| Theme keys | Separate LRU buckets per theme string |
+| RN-native flattening | Uses `StyleSheet.flatten` for arrays and nested styles |
+
+## Install
 
 ```sh
 # Expo
 npx expo install medhira-rn-styles-cache
 
 # React Native
-npm install --save medhira-rn-styles-cache
+npm install medhira-rn-styles-cache
 ```
 
-## Why Use Style Caching?
+**Peer dependencies:** `react`, `react-native` (tested with RN 0.85.x, React 19.x)
 
-In React Native, `StyleSheet.create()` is used to create optimized style objects. However, when you use dynamic styles or style objects that change frequently, each render can create new style objects, causing unnecessary re-renders and performance issues.
-
-This library provides:
-
-- **LRU Cache** (Least Recently Used) with configurable max size
-- **Style flattening** - automatically flattens nested style arrays
-- **Platform select support** - handles Platform.select() automatically
-- **Hash-based caching** - uses SHA256 for consistent cache keys
-- **Theme support** - different caches per theme
-
-## Usage
-
-### Basic Usage
+## Quick start
 
 ```tsx
+import { View } from 'react-native';
 import { getCachedStyle } from 'medhira-rn-styles-cache';
 
-const MyComponent = () => {
-  const dynamicStyle = {
-    width: someVariable ? 100 : 200,
-    height: 50,
-    backgroundColor: 'blue',
-  };
-
-  const cachedStyle = getCachedStyle(dynamicStyle);
-
-  return <View style={cachedStyle} />;
-};
-```
-
-### Multiple Styles
-
-```tsx
-import { getCachedStyles } from 'medhira-rn-styles-cache';
-
-const styles = getCachedStyles({
-  container: {
-    flex: 1,
-    padding: 10,
-  },
-  button: {
-    backgroundColor: 'green',
-    padding: 15,
-  },
-  text: {
-    color: 'white',
-    fontSize: 16,
-  },
+const dynamicStyle = getCachedStyle({
+  width: isWide ? 200 : 100,
+  padding: 12,
 });
 
-// Use like: style={styles.button}
+export function Card() {
+  return <View style={dynamicStyle} />;
+}
 ```
 
-### Clearing Cache
+## How it works
+
+```mermaid
+sequenceDiagram
+  participant App as Component
+  participant API as getCachedStyle
+  participant Flat as StyleSheet.flatten
+  participant LRU as LRU per theme
+  participant SS as StyleSheet.create
+
+  App->>API: style + optional theme
+  alt registered style ID (number)
+    API-->>App: return as-is
+  else style object
+    API->>Flat: flatten arrays
+    API->>LRU: lookup stable hash
+    alt cache hit
+      LRU-->>App: cached style
+    else cache miss
+      API->>SS: create style
+      API->>LRU: store
+      API-->>App: new style
+    end
+  end
+```
+
+Full architecture: [docs/architecture.md](https://medhira-rn-styles-cache.readthedocs.io/en/latest/architecture/)
+
+## API
+
+| Function | Description |
+|----------|-------------|
+| `getCachedStyle(style, theme?)` | Cache one style |
+| `getCachedStyles(map, theme?)` | Cache a named map of styles |
+| `prewarmStyles(styles, theme?)` | Fill cache at startup |
+| `clearStyleCache(theme?)` | Clear all themes, or one theme |
+| `configureStyleCache({ max })` | Set LRU max size |
+| `getStyleCacheStats()` | `{ size, max, themes }` |
 
 ```tsx
-import { clearStyleCache } from 'medhira-rn-styles-cache';
+import {
+  configureStyleCache,
+  getCachedStyle,
+  getCachedStyles,
+  prewarmStyles,
+  clearStyleCache,
+} from 'medhira-rn-styles-cache';
 
-// Clear all cached styles
-clearStyleCache();
+configureStyleCache({ max: 1000 });
+
+const light = getCachedStyle({ color: '#000' }, 'light');
+const styles = getCachedStyles({ row: { flexDirection: 'row' } }, 'light');
+
+prewarmStyles([{ flex: 1 }, { padding: 8 }]);
+clearStyleCache('light');
 ```
 
-### Prewarming Styles
+Platform-specific styles: use standard spread — `...Platform.select({ ios: {...}, android: {...} })` inside your style object before passing it to `getCachedStyle`.
 
-```tsx
-import { prewarmStyles } from 'medhira-rn-styles-cache';
+See the [API reference](https://medhira-rn-styles-cache.readthedocs.io/en/latest/api/) and [examples](https://medhira-rn-styles-cache.readthedocs.io/en/latest/examples/).
 
-// Pre-populate cache with frequently used styles
-prewarmStyles([
-  { flex: 1 },
-  { padding: 10 },
-  { margin: 5 },
-]);
-```
+## When to use
 
-### Theme Support
-
-```tsx
-import { getCachedStyle, getCachedStyles } from 'medhira-rn-styles-cache';
-
-// Light theme
-const lightStyle = getCachedStyle({ backgroundColor: 'white' }, 'light');
-
-// Dark theme
-const darkStyle = getCachedStyle({ backgroundColor: 'black' }, 'dark');
-
-// Different caches per theme
-const themeStyles = getCachedStyles({
-  container: { backgroundColor: 'white' },
-  text: { color: 'black' },
-}, 'light');
-```
-
-## API Reference
-
-### getCachedStyle
-
-Caches a single style object.
-
-```typescript
-function getCachedStyle(style: ViewStyle | TextStyle | ImageStyle, theme?: string): Style
-```
-
-### getCachedStyles
-
-Caches multiple style objects at once.
-
-```typescript
-function getCachedStyles(styleMap: Record<string, Style>, theme?: string): Record<string, Style>
-```
-
-### prewarmStyles
-
-Pre-populates the cache with style objects.
-
-```typescript
-function prewarmStyles(styles: Style[], theme?: string): void
-```
-
-### clearStyleCache
-
-Clears all cached styles.
-
-```typescript
-function clearStyleCache(): void
-```
-
-## Performance Benefits
-
-- Reduces memory allocations
-- Prevents unnecessary style recreations
-- LRU eviction prevents memory bloat
-- Theme-aware caching for dynamic theming
-
-## Example
-
-```tsx
-import React, { useState } from 'react';
-import { View, Text, Button } from 'react-native';
-import { getCachedStyle, clearStyleCache } from 'medhira-rn-styles-cache';
-
-const App = () => {
-  const [count, setCount] = useState(0);
-
-  const dynamicStyle = getCachedStyle({
-    width: 100 + count * 10,
-    height: 50,
-    backgroundColor: count % 2 === 0 ? 'blue' : 'red',
-  });
-
-  return (
-    <View style={{ padding: 20 }}>
-      <View style={dynamicStyle}>
-        <Text>Count: {count}</Text>
-      </View>
-      <Button title="Increment" onPress={() => setCount(c => c + 1)} />
-      <Button title="Clear Cache" onPress={clearStyleCache} />
-    </View>
-  );
-};
-
-export default App;
-```
+| Use this library | Prefer module-level `StyleSheet.create` |
+|------------------|----------------------------------------|
+| Styles depend on props/state | Styles are fully static |
+| Shared dynamic tokens (theme, density) | One-time app shell styles |
 
 ## Contributing
 
-Contribution are always welcome, no matter how large or small!
+Contributions are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-We want this community to be friendly and respectful to each other. Please follow it in all your interactions with the project.
+## Support
 
-Please feel free to drop us an email at [MEDHIRA](mailto:hello.medhira@gmail.com?subject=[GitHub])
-
-## Sponsor & Support
-
-To keep this library maintained and up-to-date please consider [sponsoring it on GitHub](https://github.com/sponsors/smuniharish). Or if you are looking for a private support or help in customizing the experience, then reach out to us on LinkedIn [https://www.linkedin.com/in/smuniharish](https://www.linkedin.com/in/smuniharish).
+- [GitHub Issues](https://github.com/HELLOMEDHIRA/medhira-rn-styles-cache/issues)
+- [hello.medhira@gmail.com](mailto:hello.medhira@gmail.com)
+- [Documentation](https://medhira-rn-styles-cache.readthedocs.io)
 
 ## License
 
-[MIT](./LICENSE)
-
----
-
-Made with love by [MEDHIRA](https://medhira.readthedocs.io/en/latest/)
+[MIT](./LICENSE) © MEDHIRA

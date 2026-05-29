@@ -1,146 +1,137 @@
 # API Reference
 
-## Functions
+Public exports from `medhira-rn-styles-cache`.
 
-### getCachedStyle
+## Types
 
-Caches a single style object using LRU cache.
-
-```typescript
-function getCachedStyle(
-  style: SupportedStyle,
-  theme?: string
-): any
-```
-
-**Parameters:**
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| style | ViewStyle \| TextStyle \| ImageStyle \| object | Yes | - | The style object to cache |
-| theme | string | No | 'default' | Theme identifier for separate caches |
-
-**Returns:** The cached style object
-
-**Example:**
-
-```typescript
-const cached = getCachedStyle({ width: 100, height: 50 });
-```
-
----
-
-### getCachedStyles
-
-Caches multiple style objects at once.
-
-```typescript
-function getCachedStyles(
-  styleMap: Record<string, SupportedStyle>,
-  theme?: string
-): Record<string, any>
-```
-
-**Parameters:**
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| styleMap | Record<string, SupportedStyle> | Yes | - | Map of style names to style objects |
-| theme | string | No | 'default' | Theme identifier for separate caches |
-
-**Returns:** Record of cached styles
-
-**Example:**
-
-```typescript
-const styles = getCachedStyles({
-  container: { flex: 1 },
-  button: { backgroundColor: 'blue' },
-  text: { color: 'white' },
-});
-```
-
----
-
-### prewarmStyles
-
-Pre-populates the cache with style objects.
-
-```typescript
-function prewarmStyles(
-  styles: SupportedStyle[],
-  theme?: string
-): void
-```
-
-**Parameters:**
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| styles | SupportedStyle[] | Yes | - | Array of styles to cache |
-| theme | string | No | 'default' | Theme identifier |
-
-**Example:**
-
-```typescript
-prewarmStyles([
-  { flex: 1 },
-  { padding: 10 },
-  { margin: 5 },
-]);
-```
-
----
-
-### clearStyleCache
-
-Clears all cached styles from the LRU cache.
-
-```typescript
-function clearStyleCache(): void
-```
-
-**Example:**
-
-```typescript
-clearStyleCache();
-```
-
----
-
-## Type Definitions
-
-### SupportedStyle
+### `SupportedStyle`
 
 ```typescript
 type SupportedStyle = ViewStyle | TextStyle | ImageStyle | object;
 ```
 
+### `CachedStyle`
+
+Registered style returned by `StyleSheet.create` (same reference type React Native uses for optimized styles).
+
+### `StyleCacheConfig`
+
+```typescript
+type StyleCacheConfig = {
+  max?: number;
+};
+```
+
+### `StyleCacheStats`
+
+```typescript
+type StyleCacheStats = {
+  size: number;
+  max: number;
+  themes: string[];
+};
+```
+
 ---
 
-## Internal Functions
+## `getCachedStyle`
 
-### flattenStyle
-
-Flattens nested style arrays into a single object.
+Caches a single style object.
 
 ```typescript
-function flattenStyle(style: any): object
+function getCachedStyle(
+  style: SupportedStyle,
+  theme?: string
+): CachedStyle | number;
 ```
 
-### applyPlatformSelect
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `style` | `SupportedStyle` | — | Style object, array, or registered style ID |
+| `theme` | `string` | `'default'` | Theme bucket for cache isolation |
 
-Handles Platform.select() in style objects.
+**Returns:** Cached registered style, or the same number if `style` is already a registered ID.
 
 ```typescript
-function applyPlatformSelect(style: any): any
+const box = getCachedStyle({ width: 100, height: 50 });
+const dark = getCachedStyle({ backgroundColor: '#000' }, 'dark');
 ```
 
-### hashStyle
+---
 
-Creates a SHA256 hash of style for cache key.
+## `getCachedStyles`
+
+Caches multiple named styles.
 
 ```typescript
-function hashStyle(style: object, theme: string): string
+function getCachedStyles(
+  styleMap: Record<string, SupportedStyle | undefined>,
+  theme?: string
+): Record<string, CachedStyle | number>;
 ```
 
+```typescript
+const styles = getCachedStyles({
+  container: { flex: 1 },
+  text: { fontSize: 16 },
+});
+```
+
+---
+
+## `prewarmStyles`
+
+Populates the cache ahead of time.
+
+```typescript
+function prewarmStyles(styles: SupportedStyle[], theme?: string): void;
+```
+
+```typescript
+prewarmStyles([{ flex: 1 }, { padding: 10 }], 'default');
+```
+
+---
+
+## `clearStyleCache`
+
+Clears cached entries.
+
+```typescript
+function clearStyleCache(theme?: string): void;
+```
+
+| Call | Effect |
+|------|--------|
+| `clearStyleCache()` | Clears all theme buckets |
+| `clearStyleCache('dark')` | Clears only the `dark` bucket |
+
+---
+
+## `configureStyleCache`
+
+Sets LRU capacity per theme bucket.
+
+```typescript
+function configureStyleCache(config: StyleCacheConfig): void;
+```
+
+```typescript
+configureStyleCache({ max: 1000 });
+```
+
+Throws `RangeError` if `max` is not a positive integer.
+
+---
+
+## `getStyleCacheStats`
+
+Returns aggregate cache metrics.
+
+```typescript
+function getStyleCacheStats(): StyleCacheStats;
+```
+
+```typescript
+const { size, max, themes } = getStyleCacheStats();
+```

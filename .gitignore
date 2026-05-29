@@ -140,3 +140,9 @@ vite.config.ts.timestamp-*
 
 android/
 ios/
+
+# MkDocs build output (published via Read the Docs)
+site/
+
+# Release tooling
+CHANGELOG.md

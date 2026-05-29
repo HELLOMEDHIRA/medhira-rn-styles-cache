@@ -18,15 +18,24 @@ theme:
     - scheme: slate
       primary: teal
       accent: teal
+  features:
+    - navigation.tabs
+    - content.code.copy
 
 nav:
   - Getting Started: index.md
+  - Architecture: architecture.md
   - API: api.md
   - Examples: examples.md
   - About: about.md
 
 markdown_extensions:
   - admonition
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - codehilite:
       guess_lang: false
   - toc:
@@ -47,4 +56,4 @@ plugins:
       cache_safe: true
 
 copyright: |
-  &copy; 2024 MEDHIRA. All rights reserved.
+  &copy; 2024-2026 MEDHIRA. All rights reserved.

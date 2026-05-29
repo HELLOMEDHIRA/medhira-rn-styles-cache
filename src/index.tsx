@@ -1,82 +1,147 @@
-import { StyleSheet,Platform } from "react-native";
-import type {ImageStyle, TextStyle, ViewStyle} from "react-native"
-import {LRUCache} from 'lru-cache'
-import {sha256} from 'js-sha256';
+import { StyleSheet } from 'react-native';
+import type { ImageStyle, TextStyle, ViewStyle } from 'react-native';
+import { LRUCache } from 'lru-cache';
+import { sha256 } from 'js-sha256';
 
-const lru = new LRUCache<string,any>({max:500})
+const DEFAULT_MAX = 500;
 
-type SupportedStyle = ViewStyle | TextStyle | ImageStyle | object;
+export type SupportedStyle = ViewStyle | TextStyle | ImageStyle | object;
 
-const flattenStyle = (style:any):object=>{
-  if(Array.isArray(style)){
-    return style.reduce((acc,item)=>{
-      if(Array.isArray(item)) return {...acc,...flattenStyle(item)};
-      if(item && typeof item === "object") return {...acc,...item};
-      return acc;
-    },{})
+export type CachedStyle = ReturnType<
+  typeof StyleSheet.create<{ style: ViewStyle }>
+>['style'];
+
+export type StyleCacheConfig = {
+  max?: number;
+};
+
+export type StyleCacheStats = {
+  size: number;
+  max: number;
+  themes: string[];
+};
+
+let maxSize = DEFAULT_MAX;
+const caches = new Map<string, LRUCache<string, CachedStyle>>();
+
+const getThemeCache = (theme: string): LRUCache<string, CachedStyle> => {
+  let cache = caches.get(theme);
+  if (!cache) {
+    cache = new LRUCache<string, CachedStyle>({ max: maxSize });
+    caches.set(theme, cache);
   }
-  return style || {}
-}
+  return cache;
+};
 
-const applyPlatformSelect=(style:any):any=>{
-  const result:any = {}
-  for (const key in style){
-    if(key === '...Platform'){
-      Object.assign(result,Platform.select(style[key]));
-    }else{
-      result[key] = style[key]
+const canonicalStringify = (value: unknown): string => {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalStringify).join(',')}]`;
+  }
+  const obj = value as Record<string, unknown>;
+  const keys = Object.keys(obj).sort();
+  return `{${keys
+    .map((key) => `${canonicalStringify(key)}:${canonicalStringify(obj[key])}`)
+    .join(',')}}`;
+};
+
+const hashStyle = (style: object): string => sha256(canonicalStringify(style));
+
+const normalizeStyle = (inputStyle: SupportedStyle): object => {
+  const flattened = StyleSheet.flatten(
+    inputStyle as Parameters<typeof StyleSheet.flatten>[0]
+  );
+  if (flattened == null || typeof flattened !== 'object') {
+    return {};
+  }
+  return flattened;
+};
+
+const resizeThemeCaches = (): void => {
+  for (const [theme, cache] of caches.entries()) {
+    const next = new LRUCache<string, CachedStyle>({ max: maxSize });
+    for (const [key, value] of cache) {
+      next.set(key, value);
     }
+    caches.set(theme, next);
   }
-  return result
-}
-const hashStyle=(style:object,theme:string):string=>{
-  const raw = JSON.stringify({style,theme});
-  return sha256(raw)
-}
+};
 
-const getCachedStyle=(inputStyle:SupportedStyle,theme:string='default'):any=>{
-  if(typeof inputStyle === 'number'){
-    return inputStyle
+export const configureStyleCache = (config: StyleCacheConfig): void => {
+  if (config.max !== undefined) {
+    if (!Number.isInteger(config.max) || config.max < 1) {
+      throw new RangeError('Style cache max must be a positive integer');
+    }
+    maxSize = config.max;
+    resizeThemeCaches();
   }
-  if(inputStyle && typeof inputStyle === "object" && '__registeredStyleBrand' in inputStyle){
-    console.warn('[StyleCache] Received a pre-cached style ID. cannot persist it.');
-    return inputStyle
-  }
+};
 
-  const flattened = flattenStyle(inputStyle);
-  const finalStyle = applyPlatformSelect(flattened)
-
-  const key = hashStyle(finalStyle,theme);
-
-  if(lru.has(key)){
-    return lru.get(key)
+export const getCachedStyle = (
+  inputStyle: SupportedStyle,
+  theme = 'default'
+): CachedStyle | number => {
+  if (typeof inputStyle === 'number') {
+    return inputStyle;
   }
 
+  const finalStyle = normalizeStyle(inputStyle);
+  const cache = getThemeCache(theme);
+  const key = hashStyle(finalStyle);
 
-  const created = StyleSheet.create({style:finalStyle});
+  const cached = cache.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const created = StyleSheet.create({ style: finalStyle as ViewStyle });
   const result = created.style;
-
-  lru.set(key,result);
-
+  cache.set(key, result);
   return result;
-}
-const getCachedStyles = (styleMap:Record<string,SupportedStyle>,theme:string='default') =>{
-  const result:Record<string,any> = {};
-  for(const key in styleMap){
-    const style = styleMap[key]
-    if(style != undefined){
-        result[key] = getCachedStyle(style,theme)
+};
+
+export const getCachedStyles = (
+  styleMap: Record<string, SupportedStyle | undefined>,
+  theme = 'default'
+): Record<string, CachedStyle | number> => {
+  const result: Record<string, CachedStyle | number> = {};
+  for (const key in styleMap) {
+    const style = styleMap[key];
+    if (style !== undefined) {
+      result[key] = getCachedStyle(style, theme);
     }
   }
-  return result
-}
+  return result;
+};
 
-const clearStyleCache = () => {
-  lru.clear();
-}
+export const clearStyleCache = (theme?: string): void => {
+  if (theme !== undefined) {
+    caches.get(theme)?.clear();
+    caches.delete(theme);
+    return;
+  }
+  caches.clear();
+};
 
-const prewarmStyles = (styles:SupportedStyle[],theme='default') => {
-  styles.forEach(style=>getCachedStyle(style,theme))
-}
+export const prewarmStyles = (
+  styles: SupportedStyle[],
+  theme = 'default'
+): void => {
+  styles.forEach((style) => {
+    getCachedStyle(style, theme);
+  });
+};
 
-export {getCachedStyle,getCachedStyles,prewarmStyles,clearStyleCache}
+export const getStyleCacheStats = (): StyleCacheStats => {
+  let size = 0;
+  for (const cache of caches.values()) {
+    size += cache.size;
+  }
+  return {
+    size,
+    max: maxSize,
+    themes: [...caches.keys()],
+  };
+};

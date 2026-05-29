@@ -1,6 +1,6 @@
 # Getting Started
 
-Welcome to **medhira-rn-styles-cache** - React Native styles caching with LRU cache.
+**medhira-rn-styles-cache** caches dynamic React Native styles using an LRU cache and stable hashing, so repeated style shapes reuse the same `StyleSheet.create` output.
 
 ## Installation
 
@@ -13,54 +13,45 @@ npx expo install medhira-rn-styles-cache
 ### React Native
 
 ```sh
-npm install --save medhira-rn-styles-cache
+npm install medhira-rn-styles-cache
 ```
 
-## Why Use Style Caching?
-
-In React Native, `StyleSheet.create()` is used to create optimized style objects. However, when you use dynamic styles or style objects that change frequently, each render can create new style objects, causing unnecessary re-renders and performance issues.
-
-This library provides:
-
-- **LRU Cache** (Least Recently Used) with configurable max size
-- **Style flattening** - automatically flattens nested style arrays
-- **Platform select support** - handles Platform.select() automatically
-- **Hash-based caching** - uses SHA256 for consistent cache keys
-- **Theme support** - different caches per theme
-
-## Quick Start
+## Quick start
 
 ```tsx
+import { View } from 'react-native';
 import { getCachedStyle } from 'medhira-rn-styles-cache';
 
-const MyComponent = () => {
-  const dynamicStyle = {
-    width: someVariable ? 100 : 200,
-    height: 50,
-    backgroundColor: 'blue',
-  };
+const boxStyle = getCachedStyle({
+  width: isWide ? 200 : 100,
+  padding: 12,
+});
 
-  const cachedStyle = getCachedStyle(dynamicStyle);
-
-  return <View style={cachedStyle} />;
-};
+export function Box() {
+  return <View style={boxStyle} />;
+}
 ```
 
 ## Features
 
-- LRU-based style caching
-- Style flattening for nested arrays
-- Platform.select() handling
-- Theme-aware caching
-- Cache prewarming
-- Cache clearing
+- LRU caching with configurable `max` (default 500)
+- Stable cache keys (property order independent)
+- Per-theme LRU buckets
+- `StyleSheet.flatten` for nested style arrays
+- Prewarm and clear helpers
 
 ## Requirements
 
-- React Native 0.60+
-- React 16+
-- TypeScript (optional, but recommended)
+- React Native **0.60+** (developed against **0.85.x**)
+- React **16+** (developed against **19.x**)
+- TypeScript optional
+
+## Next steps
+
+- [Architecture](architecture.md) — how caching works
+- [API Reference](api.md) — public exports only
+- [Examples](examples.md) — common patterns
 
 ## License
 
-[Apache 2.0](./LICENSE)
+[MIT](https://github.com/HELLOMEDHIRA/medhira-rn-styles-cache/blob/main/LICENSE)

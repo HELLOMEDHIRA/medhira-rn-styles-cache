@@ -1,36 +1,36 @@
 # Examples
 
-## Basic Style Caching
+## Basic style caching
 
 ```tsx
 import React from 'react';
 import { View, Text } from 'react-native';
 import { getCachedStyle } from 'medhira-rn-styles-cache';
 
-const BasicExample = () => {
-  const cachedStyle = getCachedStyle({
-    width: 100,
-    height: 100,
-    backgroundColor: 'blue',
-    borderRadius: 10,
-  });
+const boxStyle = getCachedStyle({
+  width: 100,
+  height: 100,
+  backgroundColor: 'blue',
+  borderRadius: 10,
+});
 
+export function BasicExample() {
   return (
-    <View style={cachedStyle}>
+    <View style={boxStyle}>
       <Text>Hello World</Text>
     </View>
   );
-};
+}
 ```
 
-## Dynamic Styles
+## Dynamic styles
 
 ```tsx
 import React, { useState } from 'react';
 import { View, Text, Button } from 'react-native';
 import { getCachedStyle } from 'medhira-rn-styles-cache';
 
-const DynamicExample = () => {
+export function DynamicExample() {
   const [count, setCount] = useState(0);
 
   const dynamicStyle = getCachedStyle({
@@ -44,58 +44,41 @@ const DynamicExample = () => {
       <View style={dynamicStyle}>
         <Text>Count: {count}</Text>
       </View>
-      <Button title="Increment" onPress={() => setCount(c => c + 1)} />
+      <Button title="Increment" onPress={() => setCount((c) => c + 1)} />
     </View>
   );
-};
+}
 ```
 
-## Multiple Styles
+## Multiple styles
 
 ```tsx
 import React from 'react';
-import { View, Text, Button } from 'react-native';
+import { View, Text } from 'react-native';
 import { getCachedStyles } from 'medhira-rn-styles-cache';
 
-const MultipleStylesExample = () => {
-  const styles = getCachedStyles({
-    container: {
-      flex: 1,
-      padding: 20,
-      backgroundColor: '#f5f5f5',
-    },
-    button: {
-      backgroundColor: 'green',
-      padding: 15,
-      borderRadius: 8,
-      margin: 10,
-    },
-    text: {
-      color: 'black',
-      fontSize: 16,
-      textAlign: 'center',
-    },
-  });
+const styles = getCachedStyles({
+  container: { flex: 1, padding: 20 },
+  text: { fontSize: 16, color: 'black' },
+});
 
+export function MultipleStylesExample() {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Multiple Styles</Text>
-      <View style={styles.button}>
-        <Text style={styles.text}>Press Me</Text>
-      </View>
     </View>
   );
-};
+}
 ```
 
-## Theme Support
+## Theme support
 
 ```tsx
 import React, { useState } from 'react';
 import { View, Text, Switch } from 'react-native';
-import { getCachedStyles } from 'medhira-rn-styles-cache';
+import { getCachedStyles, clearStyleCache } from 'medhira-rn-styles-cache';
 
-const ThemeExample = () => {
+export function ThemeExample() {
   const [isDark, setIsDark] = useState(false);
   const theme = isDark ? 'dark' : 'light';
 
@@ -105,106 +88,87 @@ const ThemeExample = () => {
         flex: 1,
         backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
       },
-      text: {
-        color: isDark ? '#ffffff' : '#000000',
-      },
+      text: { color: isDark ? '#ffffff' : '#000000' },
     },
     theme
   );
 
+  const onToggle = (value: boolean) => {
+    setIsDark(value);
+    clearStyleCache(isDark ? 'light' : 'dark');
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Theme: {theme}</Text>
-      <Switch value={isDark} onValueChange={setIsDark} />
+      <Switch value={isDark} onValueChange={onToggle} />
     </View>
   );
-};
+}
 ```
 
-## Platform-Specific Styles
+## Platform-specific styles
 
 ```tsx
 import React from 'react';
 import { View, Platform } from 'react-native';
 import { getCachedStyle } from 'medhira-rn-styles-cache';
 
-const PlatformExample = () => {
-  const style = getCachedStyle({
-    ...Platform.select({
-      ios: {
-        marginTop: 20,
-      },
-      android: {
-        marginTop: 10,
-      }),
-    }),
-    width: '100%',
-    height: 50,
-  });
+const platformStyle = getCachedStyle({
+  ...Platform.select({
+    ios: { marginTop: 20 },
+    android: { marginTop: 10 },
+  }),
+  width: '100%',
+  height: 50,
+});
 
-  return <View style={style} />;
-};
+export function PlatformExample() {
+  return <View style={platformStyle} />;
+}
 ```
 
-## Prewarming Styles
+## Prewarming
 
 ```tsx
 import { useEffect } from 'react';
-import { getCachedStyle, prewarmStyles } from 'medhira-rn-styles-cache';
+import { prewarmStyles } from 'medhira-rn-styles-cache';
 
-const App = () => {
+export function usePrewarmStyles() {
   useEffect(() => {
     prewarmStyles([
       { flex: 1 },
       { padding: 10 },
-      { padding: 20 },
       { margin: 5 },
-      { margin: 10 },
     ]);
   }, []);
-
-  return <View />;
-};
+}
 ```
 
-## Clearing Cache
+## Configure cache size
 
 ```tsx
-import React from 'react';
-import { View, Button } from 'react-native';
-import { getCachedStyle, clearStyleCache } from 'medhira-rn-styles-cache';
+import { configureStyleCache, getCachedStyle } from 'medhira-rn-styles-cache';
 
-const ClearCacheExample = () => {
-  const handleClear = () => {
-    clearStyleCache();
-  };
+configureStyleCache({ max: 200 });
 
-  return (
-    <View>
-      <Button title="Clear Cache" onPress={handleClear} />
-    </View>
-  );
-};
+const style = getCachedStyle({ flex: 1 });
 ```
 
-## With StyleSheet.create (Hybrid)
+## Hybrid with static StyleSheet
 
 ```tsx
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { getCachedStyle } from 'medhira-rn-styles-cache';
 
-const HybridExample = () => {
-  const staticStyles = StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-  });
+const staticStyles = StyleSheet.create({
+  container: { flex: 1 },
+});
 
-  const dynamicStyle = getCachedStyle({
-    backgroundColor: 'blue',
-  });
+const dynamicStyle = getCachedStyle({ backgroundColor: 'blue' });
 
+export function HybridExample() {
   return <View style={[staticStyles.container, dynamicStyle]} />;
-};
+}
 ```
