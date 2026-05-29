@@ -1,6 +1,6 @@
 {
   "name": "medhira-rn-styles-cache",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "MEDHIRA - React Native styles caching with LRU cache",
   "source": "./src/index.tsx",
   "main": "./lib/commonjs/index.js",
